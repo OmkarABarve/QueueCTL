@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+
+OBJECTIVE & CONTEXT:
+1.  **CORE GOAL:** Build a **production-grade CLI-based background job queue system (QueueCTL)** that manages jobs, runs multiple workers, and handles retries with exponential backoff and a Dead Letter Queue (DLQ).
+
+TECH STACK & STRUCTURE:
+2.  **LANGUAGE & RUNTIME:** All code must be written in **TypeScript (TS)** using **Node.js**.
+3.  **PERSISTENCE:** Job data persistence **MUST** use **SQLite**. Implement a dedicated repository/storage layer for database interactions.
+4.  **ARCHITECTURE:** Use strict separation of concerns: Separate modules for **CLI, Worker Logic, Job Queue Manager, and SQLite Storage**.
+5.  **QUALITY:** Code must be production-grade, robust, and use **strict TypeScript types** throughout.
+
+CORE FUNCTIONALITY (MUST-HAVE):
+6.  **RETRY LOGIC:** Implement **Exponential Backoff** using a default base of **2** (e.g., delay = 2 ^ attempts seconds). Move jobs to the DLQ after `max_retries`.
+7.  **JOB LIFECYCLE:** Implement the exact states: `pending`, `processing`, `completed`, `failed`, `dead`.
+8.  **WORKER SAFETY:** Workers must prevent **duplicate job processing** (using database locks or transactions) and support **graceful shutdown**.
+9.  **CLI COMMANDS:** Must support all required commands: `enqueue`, `worker start/stop`, `status`, `list`, `dlq list/retry`, and `config`.OBJECTIVE & CONTEXT:
+1.  **CORE GOAL:** Build a **production-grade CLI-based background job queue system (QueueCTL)** that manages jobs, runs multiple workers, and handles retries with exponential backoff and a Dead Letter Queue (DLQ).
+
+TECH STACK & STRUCTURE:
+2.  **LANGUAGE & RUNTIME:** All code must be written in **TypeScript (TS)** using **Node.js**.
+3.  **PERSISTENCE:** Job data persistence **MUST** use **SQLite**. Implement a dedicated repository/storage layer for database interactions.
+4.  **ARCHITECTURE:** Use strict separation of concerns: Separate modules for **CLI, Worker Logic, Job Queue Manager, and SQLite Storage**.
+5.  **QUALITY:** Code must be production-grade, robust, and use **strict TypeScript types** throughout.
+
+CORE FUNCTIONALITY (MUST-HAVE):
+6.  **RETRY LOGIC:** Implement **Exponential Backoff** using a default base of **2** (e.g., delay = 2 ^ attempts seconds). Move jobs to the DLQ after `max_retries`.
+7.  **JOB LIFECYCLE:** Implement the exact states: `pending`, `processing`, `completed`, `failed`, `dead`.
+8.  **WORKER SAFETY:** Workers must prevent **duplicate job processing** (using database locks or transactions) and support **graceful shutdown**.
+9.  **CLI COMMANDS:** Must support all required commands: `enqueue`, `worker start/stop`, `status`, `list`, `dlq list/retry`, and `config`.
+
+
+## ⚠️ **Disqualification / Common Mistakes**
+
+- Missing retry or DLQ functionality
+- Race conditions or duplicate job execution
+- Non-persistent data (jobs lost on restart)
+- Hardcoded configuration values
+- Unclear or missing README
