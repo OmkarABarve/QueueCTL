@@ -75,7 +75,7 @@ export class Queue {
     }
 
     // Ensure selected has correct type for TypeScript
-    const jobId: string = selected.id;
+    const jobId = (selected as { id: string }).id;
     const job = this.requireJob(jobId);
 
     // Transition to processing using Job API

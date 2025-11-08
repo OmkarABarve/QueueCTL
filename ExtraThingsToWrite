@@ -28,4 +28,8 @@ const dbPath = path.join(dataDir, 'queue.sqlite'); // or 'queue.db'
 const storage = new SqliteStorage(dbPath);
 storage.init(); // creates tables/indexes if missing
 
+
+
+***ASK CURSOR If JSON AND SQLITE ARE BOTH SUPPORTED, HOW DO I HANDLE THE CONFIGURATION?ALSO ASK IF ISTORAGE INSTANCES CREATED
+
 */
