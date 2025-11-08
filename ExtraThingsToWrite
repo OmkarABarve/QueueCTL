@@ -1,0 +1,31 @@
+
+/*
+Wiring example (where you bootstrap the app/CLI):
+
+
+import { defaultConfig } from './config/Config';
+import { SqliteStorage } from './storage/SqliteStorage';
+import type { IStorage } from './storage/IStorage';
+
+let storage: IStorage;
+if (defaultConfig.storage === 'sqlite') {
+  storage = new SqliteStorage(defaultConfig.sqlitePath);
+} else {
+  // storage = new JsonStorage(defaultConfig.jsonPath!);
+  throw new Error('JSON storage not yet wired');
+}
+storage.init();
+
+
+import fs from 'fs';
+import path from 'path';
+import { SqliteStorage } from './storage/SqliteStorage';
+
+const dataDir = path.resolve(process.cwd(), 'data');
+fs.mkdirSync(dataDir, { recursive: true });
+
+const dbPath = path.join(dataDir, 'queue.sqlite'); // or 'queue.db'
+const storage = new SqliteStorage(dbPath);
+storage.init(); // creates tables/indexes if missing
+
+*/
