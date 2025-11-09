@@ -7,7 +7,7 @@ import type { Config } from '../config/Config';
 import type { IStorage } from '../storage/IStorage';
 import { Job } from '../core/Job';
 import { CommandExecutor } from '../core/Executor';
-import { DLQManager } from '../dlq/DLQManager';
+import  DLQManager  from '../dlq/DLQManager';
 import type { JobState } from '../types';
 
 type RcShape = {
