@@ -1,4 +1,4 @@
-// src/cli/dlq.ts- CLI Wiring for DLQManager
+// src/cli/dlq.ts- CLI Wiring for DLQManager, while Command has CLI for non DLQ commands like enqueue, worker start/stop, status, list, config
 import { DLQManager } from '../dlq/DLQManager';
 
 async function main() {
