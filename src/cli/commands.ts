@@ -1,5 +1,3 @@
-// src/cli/commands.ts- CLI Wiring for Commands, while DLQ has CLI for DLQ commands like list, retry
-
 // src/cli/commands.ts
 import { Command } from 'commander';
 import * as path from 'path';
@@ -10,6 +8,7 @@ import type { IStorage } from '../storage/IStorage';
 import { Job } from '../core/Job';
 import { CommandExecutor } from '../core/Executor';
 import { DLQManager } from '../dlq/DLQManager';
+import type { JobState } from '../types';
 
 type RcShape = {
   storage?: Partial<Config['storage']>;
@@ -17,6 +16,7 @@ type RcShape = {
 };
 
 const RC_FILE = 'queuectl.config.json';
+const PID_FILE = 'queuectl.worker.pid';
 
 const program = new Command();
 program.name('queuectl').description('QueueCTL CLI').version('0.1.0');
@@ -70,6 +70,29 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function writePidFile(): Promise<void> {
+  const file = path.join(process.cwd(), PID_FILE);
+  await fs.writeFile(file, String(process.pid), 'utf8');
+}
+
+async function readPidFile(): Promise<number | null> {
+  try {
+    const s = await fs.readFile(path.join(process.cwd(), PID_FILE), 'utf8');
+    const pid = Number(s.trim());
+    return Number.isFinite(pid) ? pid : null;
+  } catch {
+    return null;
+  }
+}
+
+async function removePidFile(): Promise<void> {
+  try {
+    await fs.unlink(path.join(process.cwd(), PID_FILE));
+  } catch {
+    // ignore
+  }
+}
+
 // ---------- enqueue ----------
 
 program
@@ -100,11 +123,24 @@ program
     });
   });
 
-// ---------- worker start ----------
+// ---------- list ----------
 
 program
-  .command('worker')
-  .description('Worker commands')
+  .command('list')
+  .description('List jobs, optionally by state')
+  .option('--state <state>', "Filter by state: pending|processing|completed|failed|dead", (v) => v as JobState)
+  .action(async (opts: { state?: JobState }) => {
+    await withStorage(async (storage) => {
+      const items = await storage.list(opts.state);
+      console.log(JSON.stringify(items.map((j) => j.toJSON()), null, 2));
+    });
+  });
+
+// ---------- worker commands ----------
+
+const worker = program.command('worker').description('Worker commands');
+
+worker
   .command('start')
   .description('Start a worker that leases jobs from storage')
   .option('--concurrency <n>', 'Number of parallel executors', (v) => Number(v))
@@ -122,9 +158,16 @@ program
         },
       });
 
+      await writePidFile();
+
       let running = true;
-      process.on('SIGINT', () => (running = false));
-      process.on('SIGTERM', () => (running = false));
+      const stop = async () => {
+        running = false;
+        await removePidFile();
+      };
+      process.on('SIGINT', () => void stop());
+      process.on('SIGTERM', () => void stop());
+      process.on('exit', () => void removePidFile());
 
       async function loop(slot: number) {
         while (running) {
@@ -139,7 +182,6 @@ program
             job.markCompleted();
             await storage.update(job);
           } catch (err) {
-            // Apply retry/backoff via Job; persist; or DLQ if dead
             job.markFailed(err);
             if (job.state === 'dead') {
               await storage.moveToDLQ(job);
@@ -155,6 +197,26 @@ program
       await Promise.all(Array.from({ length: concurrency }, (_, i) => loop(i)));
       console.log('Worker stopped.');
     });
+  });
+
+worker
+  .command('stop')
+  .description(`Stop a running worker started in this cwd (via ${PID_FILE})`)
+  .action(async () => {
+    const pid = await readPidFile();
+    if (!pid) {
+      console.error('No worker PID file found.');
+      process.exitCode = 1;
+      return;
+    }
+    try {
+      process.kill(pid);
+      await removePidFile();
+      console.log(`Sent termination to PID ${pid}`);
+    } catch (e) {
+      console.error(`Failed to stop PID ${pid}: ${e instanceof Error ? e.message : String(e)}`);
+      process.exitCode = 1;
+    }
   });
 
 // ---------- status ----------
@@ -189,11 +251,11 @@ program
     });
   });
 
-// ---------- dlq list (and retry via dedicated dlq.ts or here) ----------
+// ---------- dlq commands ----------
 
-program
-  .command('dlq')
-  .description('Dead Letter Queue commands')
+const dlq = program.command('dlq').description('Dead Letter Queue commands');
+
+dlq
   .command('list')
   .description('List jobs in the DLQ')
   .action(async () => {
@@ -204,11 +266,28 @@ program
     });
   });
 
+dlq
+  .command('retry')
+  .description('Retry a job from the DLQ by id')
+  .argument('<jobId>')
+  .action(async (jobId: string) => {
+    await withStorage(async (storage) => {
+      const mgr = new DLQManager(storage);
+      const res = await mgr.retry(jobId);
+      if (!res) {
+        console.error(`Job ${jobId} not found in DLQ`);
+        process.exitCode = 2;
+        return;
+      }
+      console.log(`Requeued job ${jobId}`);
+    });
+  });
+
 // ---------- config get/set ----------
 
-program
-  .command('config')
-  .description('View or modify configuration')
+const configCmd = program.command('config').description('View or modify configuration');
+
+configCmd
   .command('get')
   .description('Get current effective config (env overlaid with rc file)')
   .action(async () => {
@@ -216,8 +295,7 @@ program
     console.log(JSON.stringify(cfg, null, 2));
   });
 
-program
-  .command('config')
+configCmd
   .command('set')
   .description('Set a config key (persists to queuectl.config.json)')
   .argument('<key>', 'Key path, e.g., storage.driver or worker.concurrency')
@@ -226,7 +304,6 @@ program
     const root = process.cwd();
     const rc = await readRc(root);
 
-    // parse and assign
     const parts = key.split('.');
     let cursor: any = rc;
     for (let i = 0; i < parts.length - 1; i++) {

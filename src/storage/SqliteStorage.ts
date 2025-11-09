@@ -20,11 +20,11 @@ type JobsRow = {
 type DlqRow = { payload: string };
 
 export class SqliteStorage implements IStorage {
-  private db
-
-  constructor(private filePath: string) {
-    this.db = new Database(this.filePath);
-  }
+    private db: Database.Database;
+  
+    constructor(private filePath: string) {
+      this.db = new Database(this.filePath);
+    }
 
   init(): void {
     this.db.exec(`
