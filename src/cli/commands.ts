@@ -143,12 +143,13 @@ const worker = program.command('worker').description('Worker commands');
 worker
   .command('start')
   .description('Start a worker that leases jobs from storage')
-  .option('--concurrency <n>', 'Number of parallel executors', (v) => Number(v))
+  .option('--count <n>', 'Number of parallel executors', (v) => Number(v))
+  .option('--concurrency <n>', 'Number of parallel executors (deprecated; use --count)', (v) => Number(v))
   .option('--poll <ms>', 'Polling interval when idle', (v) => Number(v))
   .option('--timeout <ms>', 'Per-job execution timeout (ms)', (v) => Number(v))
-  .action(async (opts: { concurrency?: number; poll?: number; timeout?: number }) => {
+  .action(async (opts: { count?: number; concurrency?: number; poll?: number; timeout?: number }) => {
     await withStorage(async (storage, cfg) => {
-      const concurrency = Math.max(1, opts.concurrency ?? cfg.worker.concurrency);
+      const numWorkers = Math.max(1, (opts.count ?? opts.concurrency ?? cfg.worker.concurrency));
       const pollMs = Math.max(1, opts.poll ?? cfg.worker.pollIntervalMs);
       const executor = new CommandExecutor({
         timeoutMs: opts.timeout,
@@ -194,7 +195,7 @@ worker
         }
       }
 
-      await Promise.all(Array.from({ length: concurrency }, (_, i) => loop(i)));
+      await Promise.all(Array.from({ length: numWorkers }, (_, i) => loop(i)));
       console.log('Worker stopped.');
     });
   });

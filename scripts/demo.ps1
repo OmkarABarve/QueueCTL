@@ -16,7 +16,7 @@ node dist/index.js enqueue "echo Hello_2"
 
 Write-Host "Start a worker ..."
 # Start in the foreground for Windows; alternatively use Start-Process for background
-Start-Process -FilePath "node" -ArgumentList "dist/index.js","worker","start","--concurrency","1","--poll","250","--timeout","10000" -PassThru | Tee-Object -Variable workerProc | Out-Null
+Start-Process -FilePath "node" -ArgumentList "dist/index.js","worker","start","--count","1","--poll","250","--timeout","10000" -PassThru | Tee-Object -Variable workerProc | Out-Null
 
 Start-Sleep -Seconds 2
 

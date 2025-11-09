@@ -100,12 +100,12 @@ Sample output:
 ### Worker start/stop
 
 Start a worker. Options:
-- `--concurrency <n>`: number of parallel execution loops (default from config)
+- `--count <n>`: number of parallel execution loops (default from config)
 - `--poll <ms>`: idle polling interval (default from config)
 - `--timeout <ms>`: per-job execution timeout
 
 ```bash
-node dist/index.js worker start --concurrency 2 --poll 250 --timeout 10000
+node dist/index.js worker start --count 2 --poll 250 --timeout 10000
 # stop the worker running in this directory (uses PID file queuectl.worker.pid)
 node dist/index.js worker stop
 ```
